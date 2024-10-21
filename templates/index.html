@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rule Engine with AST</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        form {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin: 10px 0 5px;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+        }
+
+        button {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #response-message,
+        #evaluation-response,
+        #combine-response {
+            margin-top: 20px;
+            background-color: #e7f3fe;
+            padding: 10px;
+            border: 1px solid #d1e7dd;
+        }
+
+        nav {
+            margin-bottom: 20px;
+        }
+
+        .instructions {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            padding: 10px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Rule Engine with AST</h1>
+    <nav>
+        <ul>
+            <li><button onclick="showSection('create-rule')">Create Rule</button></li><br>
+            <li><button onclick="showSection('evaluate-rule')">Evaluate Rule</button></li><br>
+            <li><button onclick="showSection('combine-rules')">Combine Rules</button></li>
+        </ul>
+    </nav>
+
+    <div id="create-rule" style="display: none;">
+        <h2>Create a New Rule</h2>
+        <div class="instructions">
+            <strong>Instructions:</strong>
+            <p>The rule structure should be in the form of logical expressions, for example:</p>
+            <ul>
+                <li><code>age > 30</code></li>
+                <li><code>salary < 50000 AND age >= 25</code></li>
+                <li><code>(gender = 'male' OR gender = 'female') AND (age > 18 AND age < 60)</code></li>
+            </ul>
+        </div>
+        <form id="create-rule-form">
+            <label for="rule-name">Rule Name:</label>
+            <input type="text" id="rule-name" required>
+            <label for="rule-string">Rule String:</label>
+            <textarea id="rule-string" required></textarea>
+            <button type="submit">Create Rule</button>
+        </form>
+        <div id="response-message"></div>
+    </div>
+
+    <div id="evaluate-rule" style="display: none;">
+        <h2>Evaluate a Rule</h2>
+        <div class="instructions">
+            <strong>Instructions:</strong>
+            <p>To evaluate a rule, provide the Rule ID and the user data in JSON format. For example:</p>
+            <pre>{ "age": 30, "salary": 40000, "gender": "male" }</pre>
+        </div>
+        <form id="evaluate-rule-form">
+            <label for="rule-id">Rule ID:</label>
+            <input type="number" id="rule-id" required>
+            <label for="user-data">User Data (JSON format):</label>
+            <textarea id="user-data" required></textarea>
+            <button type="submit">Evaluate Rule</button>
+        </form>
+        <div id="evaluation-response"></div>
+    </div>
+
+    <div id="combine-rules" style="display: none;">
+        <h2>Combine Rules</h2>
+        <div class="instructions">
+            <strong>Instructions:</strong>
+            <p>To combine rules, provide a comma-separated list of Rule IDs. For example:</p>
+            <pre>1, 2, 3</pre>
+            <p>The combined rule will be evaluated using an AND operator.</p>
+        </div>
+        <form id="combine-rules-form">
+            <label for="rule-ids">Rule IDs (comma separated):</label>
+            <input type="text" id="rule-ids" required>
+            <button type="submit">Combine Rules</button>
+        </form>
+        <div id="combine-response"></div>
+    </div>
+
+    <script>
+        function showSection(section) {
+            document.getElementById('create-rule').style.display = 'none';
+            document.getElementById('evaluate-rule').style.display = 'none';
+            document.getElementById('combine-rules').style.display = 'none';
+            document.getElementById(section).style.display = 'block';
+        }
+
+        document.getElementById('create-rule-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const ruleName = document.getElementById('rule-name').value;
+            const ruleString = document.getElementById('rule-string').value;
+
+            const response = await fetch('/api/rules', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: ruleName, rule_string: ruleString })
+            });
+
+            const result = await response.json();
+            document.getElementById('response-message').innerText = JSON.stringify(result);
+        });
+
+        document.getElementById('evaluate-rule-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const ruleId = document.getElementById('rule-id').value;
+            const userData = document.getElementById('user-data').value;
+
+            const response = await fetch('/api/rules/evaluate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ rule_id: ruleId, data: JSON.parse(userData) })
+            });
+
+            const result = await response.json();
+            document.getElementById('evaluation-response').innerText = JSON.stringify(result);
+        });
+
+        document.getElementById('combine-rules-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const ruleIds = document.getElementById('rule-ids').value.split(',').map(id => id.trim());
+
+            const response = await fetch('/api/rules/combine', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ rule_ids: ruleIds })
+            });
+
+            const result = await response.json();
+            document.getElementById('combine-response').innerText = JSON.stringify(result);
+        });
+    </script>
+</body>
+
+</html>
